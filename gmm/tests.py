@@ -106,3 +106,7 @@ def plot():
     plt.tight_layout()
     plt.savefig("img/plot.png", dpi=300)
     plt.close("all")
+
+
+if __name__ == '__main__':
+    plot()

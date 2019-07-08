@@ -5,20 +5,20 @@ from numpy.testing import assert_allclose
 class GMM(object):
     def __init__(self, X, C=3):
         self.X = X
-        self.C = C  # number of clusters
+        self.C = C  # number of clusters, 注释中假设C=3
         self.N = X.shape[0]  # number of objects
         self.d = X.shape[1]  # dimension of each object
 
     def _initialize_params(self):
         C = self.C
         d = self.d
-        rr = np.random.rand(C)
+        rr = np.random.rand(C)  # (C,)
 
         # randomly initialize the starting GMM parameters
-        self.pi = rr / rr.sum()  # cluster priors
-        self.Q = np.zeros((self.N, C))  # variational distribution q(T)
-        self.mu = np.random.uniform(-5, 10, C * d).reshape(C, d)  # cluster means
-        self.sigma = np.array([np.identity(d) for _ in range(C)])  # cluster covariances
+        self.pi = rr / rr.sum()  # cluster priors, such as (0.2, 0.3, 0.5) when C=3
+        self.Q = np.zeros((self.N, C))  # variational distribution q(T), (N, C),每一个样本的类别分布，也是西瓜书里的gamma_i_j
+        self.mu = np.random.uniform(-5, 10, C * d).reshape(C, d)  # cluster means:(C, d)，每一个cluster的每一dim都有个均值
+        self.sigma = np.array([np.identity(d) for _ in range(C)])  # cluster covariances: (C, d, d)
 
         self.best_pi = None
         self.best_mu = None
@@ -82,13 +82,13 @@ class GMM(object):
 
     def _E_step(self):
         for i in range(self.N):
-            x_i = self.X[i, :]
+            x_i = self.X[i, :]  # 提取每一个样本值（d，）
 
-            denom_vals = []
+            denom_vals = []  # ？？？
             for c in range(self.C):
-                pi_c = self.pi[c]
-                mu_c = self.mu[c, :]
-                sigma_c = self.sigma[c, :, :]
+                pi_c = self.pi[c]  # 当前类别的高斯分布概率分量，先验概率分布
+                mu_c = self.mu[c, :]  # 当前类别的均值
+                sigma_c = self.sigma[c, :, :]  # 当前类别的方差
 
                 log_pi_c = np.log(pi_c)
                 log_p_x_i = log_gaussian_pdf(x_i, mu_c, sigma_c)
@@ -101,19 +101,20 @@ class GMM(object):
             q_i = np.exp([num - log_denom for num in denom_vals])
             assert_allclose(np.sum(q_i), 1, err_msg="{}".format(np.sum(q_i)))
 
-            self.Q[i, :] = q_i
+            self.Q[i, :] = q_i  # 总之E更新某样本属于哪个高斯分布的后验概率分布
 
     def _M_step(self):
         C, N, X = self.C, self.N, self.X
-        denoms = np.sum(self.Q, axis=0)
+        denoms = np.sum(self.Q, axis=0)  # 对现在的Q执行0维度的平均，获得更新后的每个cluster的先验分布
 
         # update cluster priors
         self.pi = denoms / N
 
         # update cluster means
-        nums_mu = [np.dot(self.Q[:, c], X) for c in range(C)]
+        nums_mu = [np.dot(self.Q[:, c], X) for c in range(C)]  # [Q[:,0]*X, Q[:,1]*X, Q[:,2]*X]=[(1,2),(1,2),(1,2)],就是每类别每维度的均值mu
+
         for ix, (num, den) in enumerate(zip(nums_mu, denoms)):
-            self.mu[ix, :] = num / den
+            self.mu[ix, :] = num / den  # 西瓜书的9.34
 
         # update cluster covariances
         for c in range(C):
@@ -127,7 +128,7 @@ class GMM(object):
                 outer += wic * np.outer(xi - mu_c, xi - mu_c)
 
             outer /= n_c
-            self.sigma[c, :, :] = outer
+            self.sigma[c, :, :] = outer  # 西瓜书的9.35
 
         assert_allclose(np.sum(self.pi), 1, err_msg="{}".format(np.sum(self.pi)))
 
