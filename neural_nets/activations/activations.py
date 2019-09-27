@@ -29,12 +29,27 @@ class Sigmoid(ActivationBase):
         return "Sigmoid"
 
     def fn(self, z):
+        """forward function
+
+        :param z: input of layer
+        :return: f(z)
+        """
         return 1 / (1 + np.exp(-z))
 
     def grad(self, x):
+        """backward function, d_out / d_in
+
+        :param x: ???
+        :return: df(x)/dx
+        """
         return self.fn(x) * (1 - self.fn(x))
 
     def grad2(self, x):
+        """???
+
+        :param x: ???
+        :return: d2f(x)/dx2
+        """
         return self.grad(x) * (1 - self.fn(x)) - self.fn(x) * self.grad(x)
 
 

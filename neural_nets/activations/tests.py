@@ -10,17 +10,19 @@ import seaborn as sns
 sns.set_style("white")
 sns.set_context("notebook", font_scale=0.7)
 
-from activations import Affine, ReLU, LeakyReLU, Tanh, Sigmoid
+# from activations import Affine, ReLU, LeakyReLU, Tanh, Sigmoid
+from activations_my import ReLU, Sigmoid
 
 
 def plot_activations():
     fig, axes = plt.subplots(2, 3, sharex=True, sharey=True)
-    fns = [Affine(), Tanh(), Sigmoid(), ReLU(), LeakyReLU()]
+    # fns = [Affine(), Tanh(), Sigmoid(), ReLU(), LeakyReLU()]
+    fns = [Sigmoid(), ReLU()]
     for ax, fn in zip(axes.flatten(), fns):
         X = np.linspace(-3, 3, 100).astype(float)
-        ax.plot(X, fn(X), label=r"$y$", alpha=0.7)
-        ax.plot(X, fn.grad(X), label=r"$\frac{dy}{dx}$", alpha=0.7)
-        ax.plot(X, fn.grad2(X), label=r"$\frac{d^2 y}{dx^2}$", alpha=0.7)
+        ax.plot(X, fn(X).reshape(X.shape), label=r"$y$", alpha=0.7)
+        ax.plot(X, fn.grad(X).reshape(X.shape), label=r"$\frac{dy}{dx}$", alpha=0.7)
+        ax.plot(X, fn.grad2(X).reshape(X.shape), label=r"$\frac{d^2 y}{dx^2}$", alpha=0.7)
         ax.hlines(0, -3, 3, lw=1, linestyles="dashed", color="k")
         ax.vlines(0, -1.2, 1.2, lw=1, linestyles="dashed", color="k")
         ax.set_ylim(-1.1, 1.1)
