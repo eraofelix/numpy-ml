@@ -520,3 +520,7 @@ def plot():
         ax.yaxis.set_ticklabels([])
     plt.savefig("plot.png", dpi=300)
     plt.close("all")
+
+
+if __name__ == '__main__':
+    test_DecisionTree()

@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from utils import calc_pad_dims_2D, conv2D_naive, conv2D, pad2D, pad1D
-from .torch_models import (
+from torch_models import (
     WGAN_GP_tf,
     torch_xe_grad,
     torch_mse_grad,
@@ -2342,3 +2342,7 @@ def test_WGAN_GP(N=1):
             )
             print("\tPASSED {}".format(label))
         i += 1
+
+
+if __name__ == '__main__':
+    test_FullyConnected()
