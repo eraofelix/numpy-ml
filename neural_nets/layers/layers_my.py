@@ -222,8 +222,96 @@ class FullyConnected(LayerBase):
         raise NotImplementedError
 
 
+class SoftMax(LayerBase):
+    def __init__(self, dim=-1, optimizer=None):
+        """ Softmax层
 
+        Y = e^X / sum(e^X)
 
+        :param dim: 计算softmax的维度
+        :param optimizer: 优化器
+        """
+        super().__init__(optimizer)
+        self.dim = dim
+        self.n_in = None
+        self.is_initialized = False
+
+    def _init_params(self, **kwargs):
+        self.gradients = {}
+        self.parameters = {}
+        self.derived_variables = {}
+        self.is_initialized = True
+
+    @property
+    def hyperparameters(self):
+        return {
+            "layer": "SoftmaxLayer",
+            "n_in": self.n_in,
+            "n_out": self.n_in,
+            "optimizer": {
+                "cache": self.optimizer.cache,
+                "hyperparameters": self.optimizer.hyperparameters,
+            },
+        }
+
+    def forward(self, X, retain_derived=True):
+        """ Softmax前向计算层
+
+        Y = e^X / sum(e^X)
+
+        :param X: shape(n_ex, n_in)， n_ex个n_in长度的输入
+        :param retain_derived: Whether to retain the variables calculated during the forward pass
+            for use later during backprop. If `False`
+        """
+        if not self.is_initialized:
+            self.n_in = X.shape[1]
+            self._init_params()
+
+        Y = self._fwd(X)
+
+        if retain_derived:
+            self.X.append(X)
+
+    def _fwd(self, X):
+        """Actual computation of softmax forward pass"""
+        # center data to avoid overflow
+        e_X = np.exp(X - np.max(X, axis=self.dim, keepdims=True))
+        return e_X / e_X.sum(axis=self.dim, keepdims=True)
+
+    def backward(self, dLdy):
+        assert self.trainable, "Layer is frozen"
+        if not isinstance(dLdy, list):
+            dLdy = [dLdy]
+
+        dX = []
+        X = self.X
+
+        for dy, x in zip(dLdy, X):
+            dx = self._bwd(dy, x)
+            dX.append(dx)
+
+        return dX[0] if len(X) == 1 else dX
+
+    def _bwd(self, dLdy, X):
+        """ 实际的反向计算
+
+            我们设softmax输入x=[x1, x2,..., xn], 维度是1xn，
+                 softmax输出y=[y1, y2,..., yn], 维度是1xn
+
+            我们要计算的是dyi/dxj，也就是y中的每个元素yi关于x每个元素xj的导数，这是个Jacobian矩阵，
+            维度是nxn
+
+            其实很好推导，就是除法求导展开，求和展开更好理解，已推导
+        """
+        dX = []
+        for dy, x in zip(dLdy, X):
+            dxi = []
+            for dyi, xi in zip(*np.atleast_2d(dy, x)):
+                yi = self._fwd(xi.reshape(1, -1)).reshape(-1, 1)
+                dyidxi = np.diagflat(yi) - yi @ yi.T
+                dxi.append(dyi @ dyidxi)
+            dX.append(dxi)
+        return np.array(dX).reshape(*X.shape)
 
 
 
